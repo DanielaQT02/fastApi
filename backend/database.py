@@ -1,36 +1,46 @@
 from model import Todo
-# https://motor.readthedocs.io/en/stable/
-import motor.motor_asyncio
+from typing import List, Optional
 
-client = motor.motor_asyncio.AsyncIOMotorClient('mongodb+srv://shayon:shayon@rest-api-shop.zh1ls.mongodb.net/fastAPITest?retryWrites=true&w=majority')
-database = client.TodoList
-collection = database.todo
+# Base de datos simulada en memoria
+todos_db: List[dict] = []
 
 
-async def fetch_one_todo(title):
-    document = await collection.find_one({"title": title})
-    return document
+async def fetch_one_todo(title: str) -> Optional[dict]:
+    """Obtener una tarea por título"""
+    for todo in todos_db:
+        if todo.get("title") == title:
+            return todo
+    return None
 
-async def fetch_all_todos():
+
+async def fetch_all_todos() -> List[Todo]:
+    """Obtener todas las tareas"""
     todos = []
-    cursor = collection.find()
-    async for documnet in cursor:
-        todos.append(Todo(**documnet))
+    for todo_dict in todos_db:
+        todos.append(Todo(**todo_dict))
     return todos
 
-async def create_todo(todo):
-    document = todo
-    result = await collection.insert_one(document)
-    return document
+
+async def create_todo(todo: dict) -> dict:
+    """Crear una nueva tarea"""
+    # Agregar a la lista
+    todos_db.append(todo)
+    return todo
 
 
-async def update_todo(title, desc):
-    await collection.update_one({'title': title}, {"$set": {
-        "description": desc
-    }})
-    document = await collection.find_one({'title': title})
-    return document
+async def update_todo(title: str, desc: str) -> Optional[dict]:
+    """Actualizar descripción de una tarea"""
+    for todo in todos_db:
+        if todo.get("title") == title:
+            todo["description"] = desc
+            return todo
+    return None
 
-async def remove_todo(title):
-    await collection.delete_one({'title': title})
-    return True
+
+async def remove_todo(title: str) -> bool:
+    """Eliminar una tarea"""
+    for i, todo in enumerate(todos_db):
+        if todo.get("title") == title:
+            todos_db.pop(i)
+            return True
+    return False
